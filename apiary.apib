@@ -2,46 +2,40 @@ FORMAT: 1A
 HOST: http://www.google.com
 
 # stein
-Notes API is a *short texts saving* service similar to its physical paper presence on your table.
+`stein` is a TAP consumer. Supported TAP-based protocols include: TAP, TAP13, TAP-Y, TAP-J.
 
-# Group Notes
-Notes related resources of the **Notes API**
+# Group Projects
+A project groups test results.
 
-## Notes Collection [/notes]
-### List all Notes [GET]
+## Projects Collection [/projects]
+### List all Projects [GET]
 + Response 200 (application/json)
 
-        [{
-          "id": 1, "title": "Jogging in park"
-        }, {
-          "id": 2, "title": "Pick-up posters from post-office"
-        }]
+        ["project1", "project2"]
 
-### Create a Note [POST]
-+ Request (application/json)
+### Create Project [PUT]
++ Response 200 (application/json)
 
-        { "title": "Buy cheese and bread for breakfast." }
+        "created"
 
-+ Response 201 (application/json)
+## Tests within a project [/projects/{project}/tests]
+### Get test results [GET]
++ Response 200 (application/json)
 
-        { "id": 3, "title": "Buy cheese and bread for breakfast." }
-
-## Note [/notes/{id}]
-A single Note object with all its details
+        ["2014-03-04T15:06:03Z"]
 
 + Parameters
-    + id (required, number, `1`) ... Numeric `id` of the Note to perform action with. Has example value.
+    + project (required, string, `"project1"`) ... Name of the project to get test results for.
 
-### Retrieve a Note [GET]
+## Tests [/projects/{project}/tests/{id}]
+
+### Retrieve a test result [GET]
 + Response 200 (application/json)
-
-    + Header
-
-            X-My-Header: The Value
 
     + Body
 
-            { "id": 2, "title": "Pick-up posters from post-office" }
+            { "Type": "suite", "Final": {"Total": 10, "Pass": 8, "Fail": 1, "Error": 1}, "Time": "5.03" }
 
-### Remove a Note [DELETE]
-+ Response 204
++ Parameters
+    + project (required, string, `"project1"`) ... Name of the project to get test results for.
+    + id (required, string, `"2014-03-04T15:06:03Z"`) ... ID (timestamp) of the created test.
