@@ -21,6 +21,13 @@ func main() {
 		b, _ := json.Marshal(projs)
 		return string(b)
 	})
+	m.Get("/projects/:project", func (params martini.Params) (string, int) {
+		if _, ok := projects[params["project"]]; ok {
+			return "exists", 200
+		} else {
+			return "doesn't exist", 404
+		}
+	})
 	m.Put("/projects/:project", func (params martini.Params) string {
 		projects[params["project"]] = make(map[string]*stein.Suite)
 		return "created"
@@ -43,21 +50,13 @@ func main() {
 		}
 
 		id := time.Now().Format(time.RFC3339)
-		projects[proj][id] = nil
-
-		if tests, ok := projects[proj]; !ok {
-			return "project doesn't exist"
-		} else if _, ok := tests[id]; !ok {
-			return "test doesn't exist"
-		} else {
-			s, err := stein.Parse(r.Body)
-			if err != nil {
-				return err.Error()
-			}
-
-			tests[id] = s
-			return id
+		s, err := stein.Parse(r.Body)
+		if err != nil {
+			return err.Error()
 		}
+
+		projects[proj][id] = s
+		return id
 	})
 	m.Get("/projects/:project/tests/:test", func (params martini.Params) string {
 		proj := params["project"]
