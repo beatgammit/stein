@@ -18,7 +18,6 @@ installation
 license
 -------
 
-`stein` itself is released under the MIT license (see LICENSE.MIT for details), but its dependencies have other licenses:
+`stein` itself is released under the 3-clause BSD license (see LICENSE.BSD for details), but its dependencies have other licenses:
 
 * [goyaml](https://github.com/goyaml/yaml): licensed under the LGPL with an exception clause (see project for details)
-* [go](https://golang.org): licensed under 3-clause BSD license
