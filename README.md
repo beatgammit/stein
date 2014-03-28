@@ -20,4 +20,4 @@ license
 
 `stein` itself is released under the 3-clause BSD license (see LICENSE.BSD for details), but its dependencies have other licenses:
 
-* [goyaml](https://github.com/goyaml/yaml): licensed under the LGPL with an exception clause (see project for details)
+* [yaml](https://github.com/go-yaml/yaml): licensed under the LGPL with an exception clause (see project for details)
