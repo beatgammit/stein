@@ -8,20 +8,25 @@ import (
 	"io"
 	"io/ioutil"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
 
-var docSep *regexp.Regexp
-var tapTestLine *regexp.Regexp
-var tapPlan *regexp.Regexp
-var tapVersion *regexp.Regexp
+var (
+	docSep *regexp.Regexp
+	tapTestLine *regexp.Regexp
+	tapPlan *regexp.Regexp
+	tapVersion *regexp.Regexp
+	tapBailOut *regexp.Regexp
+)
 
 func init() {
 	docSep = regexp.MustCompile(`(?m)^---$|^\.\.\.$`)
-	tapTestLine = regexp.MustCompile(`(?m)^(ok|not ok)(?: (\d+))?( [^#]+)?(\s*#.*)$`)
+	tapTestLine = regexp.MustCompile(`(?m)^(ok|not ok)(?: (\d+))?( [^#]+)?(?:\s*#(.*))?$`)
 	tapPlan = regexp.MustCompile(`(?m)^\d..(\d+|N).*$`)
 	tapVersion = regexp.MustCompile(`(?m)^TAP version \d+$`)
+	tapBailOut = regexp.MustCompile(`(?m)^Bail out!\s*(.*)$`)
 }
 
 type Time struct {
@@ -336,5 +341,77 @@ func ParseYaml(r io.Reader) (*Suite, error) {
 }
 
 func ParseTap(r io.Reader) (*Suite, error) {
-	return nil, nil
+	rd := bufio.NewReader(r)
+
+	var s Suite
+	first := true
+	var totalTests int
+	for {
+		line, err := rd.ReadString('\n')
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return nil, err
+		}
+
+		if line[0] == '#' {
+			// TODO: do something with diagnostic lines
+			continue
+		}
+
+		if matches := tapBailOut.FindStringSubmatch(line); matches != nil {
+			// TODO: do something with the bail reason
+			break
+		}
+
+		if first {
+			if matches := tapVersion.FindStringSubmatch(line); matches != nil {
+				// TAP 13+
+				return nil, fmt.Errorf("TAP13 not supported yet")
+			}
+			first = false
+			if matches := tapPlan.FindStringSubmatch(line); matches != nil {
+				totalTests, _ = strconv.Atoi(matches[1])
+				continue
+			}
+		}
+
+		matches := tapTestLine.FindStringSubmatch(line)
+		if matches == nil {
+			// TODO: handle extra data
+			continue
+		}
+
+		t := Test{Type: "test"}
+		switch matches[1] {
+		case "ok":
+			t.Status = "pass"
+		case "not ok":
+			// TODO: error?
+			t.Status = "fail"
+		}
+		// ignore number
+		t.Label = strings.TrimSpace(matches[3])
+		directive := strings.TrimSpace(matches[4])
+		switch {
+		case strings.HasPrefix(strings.ToUpper(directive), "TODO"):
+			s.Final.Counts.Todo++
+		case strings.HasPrefix(strings.ToUpper(directive), "SKIP"):
+			s.Final.Counts.Omit++
+		case t.Status == "pass":
+			s.Final.Counts.Pass++
+		default:
+			s.Final.Counts.Fail++
+		}
+		s.Final.Counts.Total++
+		s.Tests = append(s.Tests, &t)
+	}
+
+	// fixup missing tests
+	if totalTests > 0 && totalTests > s.Final.Counts.Total {
+		s.Final.Counts.Fail += (totalTests - s.Final.Counts.Total)
+		s.Final.Counts.Total = totalTests
+	}
+
+	return &s, nil
 }
