@@ -57,6 +57,9 @@ func (fs FS) GetTest(project, test string) (*stein.Suite, error) {
 }
 
 func (fs FS) Save(project, test string, s *stein.Suite) error {
+	if err := os.MkdirAll(path.Join(fs.basedir, project), 0777); err != nil {
+		return err
+	}
 	f, err := os.Create(path.Join(fs.basedir, project, test))
 	if err != nil {
 		return err
