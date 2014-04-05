@@ -3,4 +3,4 @@ version: 0.0.1
 license: BSD
 description: TAP-Y/J viewer.
 dependencies:
-    browser: any
+    angular: any

@@ -1,55 +1,38 @@
 <!DOCTYPE html>
-<html>
+<html ng-app>
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>Stein TAP Viewer</title>
 		<link rel="stylesheet" href="main.css">
+		<script type='application/javascript' src="packages/shadow_dom/shadow_dom.min.js"></script>
 		<script type='application/dart' src='main.dart'></script>
-		<script src="packages/browser/dart.js"></script>
+		<script type='application/javascript' src="packages/browser/dart.js"></script>
 	</head>
 	<body>
 		<h1>Stein</h1>
-		<div id='nav'>
-			<select id='projects'>
+		<div stein-app>
+			<select ng-model="ctrl.selectedProject" ng-change="ctrl.selectProject()">
+				<option ng-repeat="project in ctrl.projects" value="{{project}}">{{project}}</option>
 			</select>
-			<select id='tests'>
+			<select ng-model="ctrl.selectedTest" ng-change="ctrl.selectTest()">
+				<option ng-repeat="test in ctrl.tests" value="{{test}}">{{test}}</option>
 			</select>
-		</div>
-		<div id='content'>
-			<div class='template suite'>
-				<div class='tally'>
-					<label>Time:</label><span class='time'>-1</span>
-					<br>
-					<label>Total:</label><span class='total'>-2</span>
-					<br>
-					<label>Pass:</label><span class='pass'>-3</span>
-					<br>
-					<label>Fail:</label><span class='fail'>-4</span>
-					<br>
-					<label>Error:</label><span class='error'>-5</span>
-					<br>
-					<label>Omit:</label><span class='omit'>-6</span>
-					<br>
-					<label>Todo:</label><span class='todo'>-7</span>
-					<br>
-				</div>
 
-				<div class='template test'>
-					<label>Subtype:</label><span class='subtype'></span>
-					<br>
-					<label>Status:</label><span class='status'></span>
-					<br>
-					<label>Label:</label><span class='label'></span>
-					<br>
-				</div>
-
-				<div class='template case'>
-					<label>Subtype:</label><span class='subtype'></span>
-					<br>
-					<label>Label:</label><span class='label'></span>
-					<br>
-				</div>
+			<div class='tally'>
+				<label>Time:</label><span class='time'>{{ctrl.curTest['Final']['Time']}}</span>
+				<br>
+				<label>Total:</label><span class='total'>{{ctrl.curTest['Final']['Counts']['Total']}}</span>
+				<br>
+				<label>Pass:</label><span class='pass'>{{ctrl.curTest['Final']['Counts']['Pass']}}</span>
+				<br>
+				<label>Fail:</label><span class='fail'>{{ctrl.curTest['Final']['Counts']['Fail']}}</span>
+				<br>
+				<label>Error:</label><span class='error'>{{ctrl.curTest['Final']['Counts']['Error']}}</span>
+				<br>
+				<label>Omit:</label><span class='omit'>{{ctrl.curTest['Final']['Counts']['Omit']}}</span>
+				<br>
+				<label>Todo:</label><span class='todo'>{{ctrl.curTest['Final']['Counts']['Todo']}}</span>
 			</div>
 		</div>
 	</body>

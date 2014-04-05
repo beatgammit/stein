@@ -1,80 +1,91 @@
+library stein;
+
+import 'dart:async';
 import 'dart:html';
 import 'dart:convert';
+import 'package:angular/angular.dart';
 
-void loadTest(project, test) {
-  HttpRequest.getString('/projects/$project/tests/$test').then((data) {
-    var suite = JSON.decode(data);
-    if (suite == null) {
-      return;
-    }
+// Temporary, please follow https://github.com/angular/angular.dart/issues/476
+@MirrorsUsed(targets: const['stein'], override: '*')
+import 'dart:mirrors';
 
-    querySelectorAll('.suite:not(.template)').forEach((el) => el.remove());
+@NgController(selector: '[stein-app]', publishAs: 'ctrl')
+class SteinController {
+  List<String> tests;
+  List<String> projects;
+  String selectedProject;
+  String selectedTest;
+  TestSuite curTest;
 
-    var suiteEl = querySelector('.suite.template').clone(true);
-    suiteEl.classes.remove('template');
+  SteinController() {
+    _loadProjects().then((proj) => this.projects = proj);
+  }
 
-    print(suite);
+  Future<List<String>> _loadProjects() {
+    return HttpRequest.getString('/projects').then((data) {
+      var projects = JSON.decode(data);
 
-    suiteEl.querySelector('.tally > .time').innerHtml = "${suite['Final']['Time']}";
-    suiteEl.querySelector('.tally > .total').innerHtml = "${suite['Final']['Counts']['Total']}";
-    suiteEl.querySelector('.tally > .pass').innerHtml = "${suite['Final']['Counts']['Pass']}";
-    suiteEl.querySelector('.tally > .fail').innerHtml = "${suite['Final']['Counts']['Error']}";
-    suiteEl.querySelector('.tally > .error').innerHtml = "${suite['Final']['Counts']['Fail']}";
-    suiteEl.querySelector('.tally > .omit').innerHtml = "${suite['Final']['Counts']['Omit']}";
-    suiteEl.querySelector('.tally > .todo').innerHtml = "${suite['Final']['Counts']['Todo']}";
+      if (projects == null || projects.isEmpty) {
+        return [];
+      }
 
-    querySelector('#content').append(suiteEl);
-  });
+      projects.sort();
+      return projects;
+    });
+  }
+
+  Future<List<String>> _loadTests(String project) {
+    return HttpRequest.getString('/projects/$project/tests').then((data) {
+      var tests = JSON.decode(data);
+
+      if (tests == null || tests.isEmpty) {
+        return [];
+      }
+
+      tests.sort();
+      return tests;
+    });
+  }
+
+  Future<List<String>> _loadTest(String project, String test) {
+    return HttpRequest.getString('/projects/$project/tests/$test').then((data) {
+      var test = JSON.decode(data);
+
+      if (test == null) {
+        return [];
+      }
+
+      return test;
+    });
+  }
+
+  void selectProject() {
+    // TODO: remove this once bug 399 is fixed:
+    // https://github.com/angular/angular.dart/issues/399
+    new Future(() {
+      _loadTests(selectedProject).then((tests) {
+        this.tests = tests;
+      });
+    });
+  }
+
+  void selectTest() {
+    // TODO: remove this once bug 399 is fixed:
+    // https://github.com/angular/angular.dart/issues/399
+    new Future(() {
+      _loadTest(selectedProject, selectedTest).then((test) {
+        this.curTest = test;
+      });
+    });
+  }
 }
 
-void loadTests(project) {
-  var testList = querySelector('#tests');
-
-  HttpRequest.getString('/projects/$project/tests').then((data) {
-    var tests = JSON.decode(data);
-
-    testList.children.clear();
-
-    if (tests == null || tests.isEmpty) {
-      return;
-    }
-
-    tests.sort();
-    tests.forEach((test) {
-      var el = document.createElement('option');
-      el.value = test;
-      el.innerHtml = test;
-      testList.append(el);
-    });
-
-    loadTest(project, tests.first);
-  });
-}
-
-void loadProjects() {
-  HttpRequest.getString('/projects').then((data) {
-    var projectList = querySelector('#projects');
-    var projects = JSON.decode(data);
-
-    if (projects == null || projects.isEmpty) {
-      return;
-    }
-
-    projects.sort();
-    projects.forEach((project) {
-      var el = document.createElement('option');
-      el.value = project;
-      el.innerHtml = project;
-      projectList.append(el);
-    });
-
-    loadTests(projects.first);
-  });
+class SteinModule extends Module {
+  SteinModule() {
+    type(SteinController);
+  }
 }
 
 void main() {
-  loadProjects();
-
-  querySelector('#projects').onChange.listen((ev) => loadTests(ev.target.value));
-  querySelector('#tests').onChange.listen((ev) => loadTest(querySelector('#projects').value, ev.target.value));
+  ngBootstrap(module: new SteinModule());
 }
