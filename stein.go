@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"gopkg.in/v1/yaml"
 	"io"
-	"io/ioutil"
 	"regexp"
 	"strconv"
 	"strings"
@@ -14,20 +13,12 @@ import (
 )
 
 var (
-	docSep *regexp.Regexp
-	tapTestLine *regexp.Regexp
-	tapPlan *regexp.Regexp
-	tapVersion *regexp.Regexp
-	tapBailOut *regexp.Regexp
-)
-
-func init() {
-	docSep = regexp.MustCompile(`(?m)^---$|^\.\.\.$`)
+	docSep      = regexp.MustCompile(`(?m)^---$|^\.\.\.$`)
 	tapTestLine = regexp.MustCompile(`(?m)^(ok|not ok)(?: (\d+))?( [^#]+)?(?:\s*#(.*))?$`)
-	tapPlan = regexp.MustCompile(`(?m)^\d..(\d+|N).*$`)
-	tapVersion = regexp.MustCompile(`(?m)^TAP version \d+$`)
-	tapBailOut = regexp.MustCompile(`(?m)^Bail out!\s*(.*)$`)
-}
+	tapPlan     = regexp.MustCompile(`(?m)^\d..(\d+|N).*$`)
+	tapVersion  = regexp.MustCompile(`(?m)^TAP version \d+$`)
+	tapBailOut  = regexp.MustCompile(`(?m)^Bail out!\s*(.*)$`)
+)
 
 type Time struct {
 	time.Time
@@ -53,7 +44,7 @@ func (t *Time) GetYAML() (tag string, value interface{}) {
 }
 func (t *Time) SetYAML(tag string, value interface{}) bool {
 	if v, ok := value.(string); ok {
-		return t.parse(v) == nil
+		return t.parse(strings.Trim(v, `'"`)) == nil
 	}
 	return false
 }
@@ -72,9 +63,11 @@ type Suite struct {
 	Final Tally
 }
 
-func (s *Suite) parse(dec decoder, parts []string) (err error) {
+func (s *Suite) parse(dec decoder) (err error) {
 	var lastCase *Case
-	for _, doc := range parts {
+	for dec.Scan() {
+		doc := dec.Scanner.Text()
+
 		if strings.TrimSpace(doc) == "" {
 			continue
 		}
@@ -102,8 +95,8 @@ func (s *Suite) parse(dec decoder, parts []string) (err error) {
 				s.Cases = append(s.Cases, &c)
 				lastCase = &c
 			} else if lastCase == nil {
-				fmt.Println("No parent found for test case:", c)
-				return
+				// TODO: possibly just add this case to the suite
+				return fmt.Errorf("No parent found for test case: %v", c)
 			} else {
 				// find the parent
 				for c.Level <= lastCase.Level {
@@ -134,7 +127,6 @@ func (s *Suite) parse(dec decoder, parts []string) (err error) {
 			if err = dec.Unmarshal([]byte(doc), &t); err != nil {
 				return
 			}
-			fmt.Println("tally:", t)
 		case "final":
 			var t Tally
 			if err = dec.Unmarshal([]byte(doc), &t); err != nil {
@@ -258,37 +250,53 @@ type Tally struct {
 	Extra interface{} `yaml:",omitempty" json:",omitempty"`
 }
 
-type decoder string
+type decoder struct {
+	*bufio.Scanner
+	Unmarshal func([]byte, interface{}) error
+}
 
-func (dec decoder) Type(b []byte) (string, error) {
-	m := make(map[string]interface{})
-	switch dec {
+func scanYAMLDoc(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if loc := docSep.FindIndex(data); loc != nil {
+		if loc[0] == 0 {
+			// just a start document marker
+			return loc[1], nil, nil
+		}
+		// We found a complete document
+		return loc[1], data[0:loc[0]], nil
+	}
+	if atEOF {
+		// if we're at EOF without having matched docSep, there's nothing else to get
+		return len(data), nil, nil
+	}
+	// Request more data.
+	return 0, nil, nil
+}
+
+func newDecoder(typ string, r io.Reader) decoder {
+	dec := decoder{Scanner: bufio.NewScanner(r)}
+	switch typ {
 	case "json":
-		if err := json.Unmarshal(b, &m); err != nil {
-			return "", fmt.Errorf("Invalid JSON: %s", err)
-		}
+		dec.Unmarshal = json.Unmarshal
 	case "yaml":
-		if err := yaml.Unmarshal(b, m); err != nil {
-			return "", fmt.Errorf("Invalid YAML: %s", err)
-		}
+		dec.Unmarshal = yaml.Unmarshal
+		dec.Scanner.Split(scanYAMLDoc)
+	case "tap":
 	default:
 		panic("Unsupported decoder")
 	}
+	return dec
+}
 
+func (dec decoder) Type(b []byte) (string, error) {
+	m := make(map[string]interface{})
+	if err := dec.Unmarshal(b, &m); err != nil {
+		return "", fmt.Errorf("Invalid document: %s", err)
+	}
 	if typ, ok := m["type"].(string); !ok {
 		return "", fmt.Errorf("Missing 'type' key in document")
 	} else {
 		return typ, nil
 	}
-}
-func (dec decoder) Unmarshal(b []byte, v interface{}) error {
-	switch dec {
-	case "json":
-		return json.Unmarshal(b, v)
-	case "yaml":
-		return yaml.Unmarshal(b, v)
-	}
-	panic("Unsupported decoder")
 }
 
 func Parse(r io.Reader) (*Suite, error) {
@@ -298,46 +306,15 @@ func Parse(r io.Reader) (*Suite, error) {
 		panic(err)
 	}
 
+	s := new(Suite)
 	switch b[0] {
 	case '{':
-		return ParseJSON(rd)
+		return s, s.parse(newDecoder("json", rd))
 	case '-':
-		return ParseYaml(rd)
+		return s, s.parse(newDecoder("yaml", rd))
 	default:
 		return ParseTap(rd)
 	}
-
-}
-
-func ParseJSON(r io.Reader) (*Suite, error) {
-	rd := bufio.NewReader(r)
-	var parts []string
-	for {
-		var line string
-		line, err := rd.ReadString('\n')
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return nil, err
-		}
-
-		parts = append(parts, line)
-	}
-
-	s := new(Suite)
-	return s, s.parse(decoder("json"), parts)
-}
-
-func ParseYaml(r io.Reader) (*Suite, error) {
-	b, err := ioutil.ReadAll(r)
-	if err != nil {
-		return nil, err
-	}
-
-	parts := docSep.Split(string(b), -1)
-
-	s := new(Suite)
-	return s, s.parse(decoder("yaml"), parts)
 }
 
 func ParseTap(r io.Reader) (*Suite, error) {
