@@ -20,6 +20,37 @@ var (
 	tapBailOut  = regexp.MustCompile(`(?m)^Bail out!\s*(.*)$`)
 )
 
+func Parse(r io.Reader) (*Suite, error) {
+	parser := Parser{&DefaultHandler{}}
+	return parser.Parse(r)
+}
+
+type Parser struct {
+	Handler Handler
+}
+
+func (p *Parser) Parse(r io.Reader) (*Suite, error) {
+	rd := bufio.NewReader(r)
+	b, err := rd.Peek(1)
+	if err != nil {
+		panic(err)
+	}
+
+	if p.Handler == nil {
+		p.Handler = &DefaultHandler{}
+	}
+
+	s := new(Suite)
+	switch b[0] {
+	case '{':
+		return s, s.parse(newDecoder("json", rd), p.Handler)
+	case '-':
+		return s, s.parse(newDecoder("yaml", rd), p.Handler)
+	default:
+		return ParseTap(rd, p.Handler)
+	}
+}
+
 type Time struct {
 	time.Time
 }
@@ -63,10 +94,12 @@ type Suite struct {
 	Final Tally
 }
 
-func (s *Suite) parse(dec decoder) (err error) {
+func (s *Suite) parse(dec decoder, handler Handler) (err error) {
+	handler.HandleBeforeStream()
 	var lastCase *Case
 	for dec.Scan() {
 		doc := dec.Scanner.Text()
+		handler.HandleDoc(doc, dec.format)
 
 		if strings.TrimSpace(doc) == "" {
 			continue
@@ -76,6 +109,7 @@ func (s *Suite) parse(dec decoder) (err error) {
 			if err = dec.Unmarshal([]byte(doc), &s); err != nil {
 				return
 			}
+			handler.HandleSuite(s)
 			continue
 		}
 
@@ -106,6 +140,7 @@ func (s *Suite) parse(dec decoder) (err error) {
 				c.parent = lastCase
 				lastCase.Subcases = append(lastCase.Subcases, &c)
 			}
+			handler.HandleCase(&c)
 		case "test":
 			var t Test
 			if err = dec.Unmarshal([]byte(doc), &t); err != nil {
@@ -116,28 +151,33 @@ func (s *Suite) parse(dec decoder) (err error) {
 			} else {
 				s.Tests = append(s.Tests, &t)
 			}
+			handler.HandleTest(&t)
 		case "note":
 			var n Note
 			if err = dec.Unmarshal([]byte(doc), &n); err != nil {
 				return
 			}
 			s.Notes = append(s.Notes, n)
+			handler.HandleNote(&n)
 		case "tally":
 			var t Tally
 			if err = dec.Unmarshal([]byte(doc), &t); err != nil {
 				return
 			}
+			handler.HandleTally(&t)
 		case "final":
 			var t Tally
 			if err = dec.Unmarshal([]byte(doc), &t); err != nil {
 				return
 			}
 			s.Final = t
+			handler.HandleFinal(&t)
 		default:
 			err = fmt.Errorf("Invalid type: %s", typ)
 			return
 		}
 	}
+	handler.HandleAfterStream()
 	return
 }
 
@@ -158,6 +198,7 @@ func (s Suite) Docs() (ret []interface{}) {
 	ret = append(ret, s.Final)
 	return
 }
+
 func (s Suite) ToTapY() ([]byte, error) {
 	var ret []byte
 	for _, doc := range s.Docs() {
@@ -201,21 +242,21 @@ type Snippet []map[string]string
 
 type Test struct {
 	Type     string
-	Subtype  string
+	Subtype  string `yaml:",omitempty" json:",omitempty"`
 	Status   string
-	Setup    string
+	Setup    string `yaml:",omitempty" json:",omitempty"`
 	Label    string
-	Expected interface{}
-	Returned interface{}
-	File     string
-	Line     int
-	Source   string
-	Snippet  Snippet
+	Expected interface{} `yaml:",omitempty" json:",omitempty"`
+	Returned interface{} `yaml:",omitempty" json:",omitempty"`
+	File     string      `yaml:",omitempty" json:",omitempty"`
+	Line     int         `yaml:",omitempty" json:",omitempty"`
+	Source   string      `yaml:",omitempty" json:",omitempty"`
+	Snippet  Snippet     `yaml:",omitempty" json:",omitempty"`
 	Coverage struct {
 		File string
 		Line interface{}
 		Code string
-	}
+	} `yaml:",omitempty" json:",omitempty"`
 	Exception struct {
 		Message   string
 		File      string
@@ -223,7 +264,7 @@ type Test struct {
 		Source    string
 		Snippet   Snippet
 		Backtrace interface{}
-	}
+	} `yaml:",omitempty" json:",omitempty"`
 	Stdout string `yaml:",omitempty" json:",omitempty"`
 	Stderr string `yaml:",omitempty" json:",omitempty"`
 	Time   float64
@@ -252,6 +293,7 @@ type Tally struct {
 
 type decoder struct {
 	*bufio.Scanner
+	format    string
 	Unmarshal func([]byte, interface{}) error
 }
 
@@ -274,13 +316,15 @@ func scanYAMLDoc(data []byte, atEOF bool) (advance int, token []byte, err error)
 
 func newDecoder(typ string, r io.Reader) decoder {
 	dec := decoder{Scanner: bufio.NewScanner(r)}
+	// TODO: handle plain TAP with a decoder as well
 	switch typ {
 	case "json":
+		dec.format = "json"
 		dec.Unmarshal = json.Unmarshal
 	case "yaml":
+		dec.format = "yaml"
 		dec.Unmarshal = yaml.Unmarshal
 		dec.Scanner.Split(scanYAMLDoc)
-	case "tap":
 	default:
 		panic("Unsupported decoder")
 	}
@@ -299,27 +343,12 @@ func (dec decoder) Type(b []byte) (string, error) {
 	}
 }
 
-func Parse(r io.Reader) (*Suite, error) {
-	rd := bufio.NewReader(r)
-	b, err := rd.Peek(1)
-	if err != nil {
-		panic(err)
+func ParseTap(r io.Reader, handler Handler) (*Suite, error) {
+	if handler == nil {
+		handler = &DefaultHandler{}
 	}
-
-	s := new(Suite)
-	switch b[0] {
-	case '{':
-		return s, s.parse(newDecoder("json", rd))
-	case '-':
-		return s, s.parse(newDecoder("yaml", rd))
-	default:
-		return ParseTap(rd)
-	}
-}
-
-func ParseTap(r io.Reader) (*Suite, error) {
+	handler.HandleBeforeStream()
 	rd := bufio.NewReader(r)
-
 	var s Suite
 	first := true
 	var totalTests int
@@ -330,6 +359,7 @@ func ParseTap(r io.Reader) (*Suite, error) {
 		} else if err != nil {
 			return nil, err
 		}
+		handler.HandleDoc(line, "tap")
 
 		if line[0] == '#' {
 			// TODO: do something with diagnostic lines
@@ -369,6 +399,7 @@ func ParseTap(r io.Reader) (*Suite, error) {
 		}
 		// ignore number
 		t.Label = strings.TrimSpace(matches[3])
+		handler.HandleTest(&t)
 		directive := strings.TrimSpace(matches[4])
 		switch {
 		case strings.HasPrefix(strings.ToUpper(directive), "TODO"):
@@ -390,5 +421,7 @@ func ParseTap(r io.Reader) (*Suite, error) {
 		s.Final.Counts.Total = totalTests
 	}
 
+	handler.HandleFinal(&s.Final)
+	handler.HandleAfterStream()
 	return &s, nil
 }
