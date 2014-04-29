@@ -2,7 +2,7 @@ FORMAT: 1A
 HOST: http://www.google.com
 
 # stein
-`stein` is a TAP consumer. Supported TAP-based protocols include: TAP, TAP13, TAP-Y, TAP-J.
+`stein` is a TAP consumer. Supported TAP-based protocols include: TAP, TAP-Y, TAP-J.
 
 # Group Projects
 A project groups test results.
@@ -13,29 +13,70 @@ A project groups test results.
 
         ["project1", "project2"]
 
-### Create Project [PUT]
-+ Response 200 (application/json)
-
-        "created"
+# Group Tests by ID
 
 ## Tests within a project [/projects/{project}/tests]
-### Get test results [GET]
+### Get tests for a project [GET]
+
+Alias for /projects/{project}/tests/id
+
 + Response 200 (application/json)
 
-        ["2014-03-04T15:06:03Z"]
+        ["2014-03-02T15:06:03Z", "2014-03-04T15:06:03Z", "2014-03-05T15:06:03Z"]
 
 + Parameters
     + project (required, string, `"project1"`) ... Name of the project to get test results for.
 
-## Tests [/projects/{project}/tests/{id}]
-
-### Retrieve a test result [GET]
+## Tests within a project [/projects/{project}/tests/id]
+### Get tests for a project [GET]
 + Response 200 (application/json)
 
-    + Body
-
-            { "Type": "suite", "Final": {"Total": 10, "Pass": 8, "Fail": 1, "Error": 1}, "Time": "5.03" }
+        ["2014-03-02T15:06:03Z", "2014-03-04T15:06:03Z", "2014-03-05T15:06:03Z"]
 
 + Parameters
     + project (required, string, `"project1"`) ... Name of the project to get test results for.
-    + id (required, string, `"2014-03-04T15:06:03Z"`) ... ID (timestamp) of the created test.
+
+# Tests within a project [/projects/{project}/tests/id/{id}]
+### Get a specific test for a project [GET]
++ Response 200 (application/json)
+
+        { "Type": "suite", "Final": {"Total": 10, "Pass": 8, "Fail": 1, "Error": 1}, "Time": "5.03" }
+
++ Parameters
+    + project (required, string, `"project1"`) ... Name of the project to get test results for.
+    + id (required, string, `"2014-03-04T15:06:03Z"`) ... Test result to retrieve.
+
+# Group Tests by Type
+
+## Tests within a project [/projects/{project}/tests/type]
+### Get test types for a project [GET]
++ Response 200 (application/json)
+
+        ["api", "browser"]
+
++ Parameters
+    + project (required, string, `"project1"`) ... Name of the project to get test results for.
+
+## Tests within a project [/projects/{project}/tests/type/{type}]
+### Get tests for project by type [GET]
++ Response 200 (application/json)
+
+        ["2014-03-02T15:06:03Z", "2014-03-05T15:06:03Z"]
+
++ Parameters
+    + project (required, string, `"project1"`) ... Name of the project.
+    + type (required, string, `"api"`) ... Name of the test to get test results for.
+
+### Upload results for a test by type [POST]
++ Request (text/tap-j, text/tap-y, text/tap)
+
+        1 Test the API
+        2 Test the other API
+
++ Response 200 (application/json)
+
+        ["2014-03-02T15:06:03Z", "2014-03-05T15:06:03Z"]
+
++ Parameters
+    + project (required, string, `"project1"`) ... Name of the project.
+    + type (required, string, `"api"`) ... Name of the test to get test results for.
