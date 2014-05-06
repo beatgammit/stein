@@ -350,6 +350,7 @@ func ParseTap(r io.Reader, handler Handler) (*Suite, error) {
 	handler.HandleBeforeStream()
 	rd := bufio.NewReader(r)
 	var s Suite
+	s.Start = &Time{time.Now()}
 	first := true
 	var totalTests int
 	for {
@@ -379,6 +380,9 @@ func ParseTap(r io.Reader, handler Handler) (*Suite, error) {
 			first = false
 			if matches := tapPlan.FindStringSubmatch(line); matches != nil {
 				totalTests, _ = strconv.Atoi(matches[1])
+				s.Count = totalTests
+				// assuming plan line at beginning of output
+				handler.HandleSuite(&s)
 				continue
 			}
 		}
@@ -399,18 +403,22 @@ func ParseTap(r io.Reader, handler Handler) (*Suite, error) {
 		}
 		// ignore number
 		t.Label = strings.TrimSpace(matches[3])
-		handler.HandleTest(&t)
 		directive := strings.TrimSpace(matches[4])
 		switch {
 		case strings.HasPrefix(strings.ToUpper(directive), "TODO"):
 			s.Final.Counts.Todo++
+			t.Label = directive
+			t.Status = "todo"
 		case strings.HasPrefix(strings.ToUpper(directive), "SKIP"):
 			s.Final.Counts.Omit++
+			t.Label = directive
+			t.Status = "omit"
 		case t.Status == "pass":
 			s.Final.Counts.Pass++
 		default:
 			s.Final.Counts.Fail++
 		}
+		handler.HandleTest(&t)
 		s.Final.Counts.Total++
 		s.Tests = append(s.Tests, &t)
 	}
