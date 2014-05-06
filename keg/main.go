@@ -1,105 +1,39 @@
 package main
 
 import (
-	"flag"
+	"bytes"
 	"fmt"
+	"io"
 	"os"
-	"strings"
 
-	"github.com/beatgammit/stein"
-	"github.com/wsxiaoys/terminal"
-)
-
-const (
-	timeFormat = "2006-01-02 at 15:04:05"
+	flag "github.com/ogier/pflag"
 )
 
 var (
-	onlyFail = flag.Bool("onlyfail", false, "Only display failed tests")
+	onlyFail  = flag.BoolP("onlyfail", "f", false, "Only display failed tests")
+	steinHost = flag.StringP("stein", "s", "", "Address of Stein server to send results to")
+	project   = flag.StringP("project", "p", "default", "Project the test results belong to")
+	testType  = flag.StringP("type", "t", "", "Test result type")
 )
 
 func main() {
 	flag.Parse()
-	_, err := newKegParser().Parse(os.Stdin)
-	if err != nil {
-		fmt.Println("Error parsing tap input: %s", err)
-	}
-}
-
-func newKegParser() *stein.Parser {
-	return &stein.Parser{
-		&kegHandler{
-			currentLevel: -1,
-		},
-	}
-}
-
-type kegHandler struct {
-	*stein.DefaultHandler
-	currentLevel int
-	afterCase    bool
-}
-
-func (h *kegHandler) getIndentation(level int) string {
-	indentation := ""
-	for i := 0; i < level; i++ {
-		indentation += "    "
-	}
-	return indentation
-}
-
-func (h *kegHandler) HandleSuite(s *stein.Suite) {
-	fmt.Printf("Test suite started on %s\n", s.Start.Local().Format(timeFormat))
-	if s.Count > 0 {
-		fmt.Printf("Running %d tests...\n\n", s.Count)
-	}
-}
-
-func (h *kegHandler) HandleCase(c *stein.Case) {
-	clearLine()
-	fmt.Printf("%s%s\n", h.getIndentation(h.currentLevel), c.Label)
-	h.currentLevel = c.Level
-}
-
-func (h *kegHandler) HandleTest(t *stein.Test) {
-	status := t.Status
-	if strings.ToLower(status) == "omit" {
-		status = "skip"
-	}
-	clearLine()
-	testLine := fmt.Sprintf("%s%s ... %s", h.getIndentation(h.currentLevel+1), status, t.Label)
-	printColor(statusColors[status], testLine)
-	if *onlyFail {
-		if status == "fail" || status == "error" {
-			fmt.Print("\n")
-		} else {
-			fmt.Print("\r")
+	if len(*steinHost) > 0 {
+		if err := validatePost(*steinHost); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
 		}
-	} else {
-		fmt.Print("\n")
 	}
-}
-
-func (h *kegHandler) HandleFinal(t *stein.Tally) {
-	clearLine()
-	fmt.Printf("\nResults: %d pass, %d fail, %d error, %d skip\n",
-		t.Counts.Pass, t.Counts.Fail, t.Counts.Error, t.Counts.Omit)
-}
-
-func clearLine() {
-	if *onlyFail {
-		terminal.Stdout.ClearLine()
+	buffer := &bytes.Buffer{}
+	_, err := newKegParser().Parse(io.TeeReader(os.Stdin, buffer))
+	if err != nil {
+		fmt.Println("Error parsing tap input:", err)
+		os.Exit(1)
 	}
-}
-
-var statusColors = map[string]string{
-	"pass":  "g",
-	"skip":  "y",
-	"fail":  "r",
-	"error": "m",
-	"todo":  "b",
-}
-
-func printColor(color, text string) {
-	terminal.Stdout.Color(color).Print(text).Reset()
+	if len(*steinHost) > 0 {
+		if err := postSuite(buffer, *steinHost, *project, *testType); err != nil {
+			fmt.Println("Error posting test results to Stein:", err)
+			os.Exit(1)
+		}
+	}
 }
