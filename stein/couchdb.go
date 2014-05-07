@@ -142,10 +142,14 @@ func (db CouchDB) GetProjects() ([]string, error) {
 		return nil, err
 	}
 
-	rows := m["rows"].([]interface{})
+	projects := []string{}
+	rows, ok := m["rows"].([]interface{})
+	if !ok || len(rows) == 0 {
+		// no projects yet
+		return projects, nil
+	}
 	match := rows[0].(map[string]interface{})
 	counts := match["value"].(map[string]interface{})
-	var projects []string
 	for project := range counts {
 		projects = append(projects, project)
 	}
