@@ -12,10 +12,19 @@ import (
 	"time"
 )
 
-var dbType string
+var (
+	steinAddr string
+	dbType    string
+	dbName    string
+	couchAddr string
+)
 
 func init() {
+	flag.StringVar(&steinAddr, "addr", "localhost:3000", "address and port where stein will run")
 	flag.StringVar(&dbType, "dbtype", "fs", "database type to use: fs, couchdb")
+	flag.StringVar(&dbName, "dbname", "test_results", "database to use")
+	flag.StringVar(&couchAddr, "couchaddr", "localhost:5984", "address of couchdb")
+
 	flag.Parse()
 }
 
@@ -24,9 +33,9 @@ func main() {
 	var err error
 	switch dbType {
 	case "fs":
-		db, err = NewFileStore("file_store")
+		db, err = NewFileStore(dbName)
 	case "couchdb":
-		db, err = NewCouchDB("localhost:5984", "test", "", "")
+		db, err = NewCouchDB(couchAddr, dbName, "", "")
 	default:
 		err = fmt.Errorf("Unsupported database type: %s", dbType)
 	}
@@ -78,5 +87,5 @@ func main() {
 		b, _ := json.Marshal(s)
 		return string(b), 200
 	})
-	m.Run()
+	log.Fatal("%s", http.ListenAndServe(steinAddr, m))
 }
