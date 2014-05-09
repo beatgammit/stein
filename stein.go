@@ -220,8 +220,8 @@ type Case struct {
 	Level   int
 	Extra   interface{} `yaml:",omitempty" json:",omitempty"`
 
-	Tests    []*Test `yaml:"-" json:"-"`
-	Subcases []*Case `yaml:"-" json:"-"`
+	Tests    []*Test
+	Subcases []*Case
 
 	parent *Case
 }
