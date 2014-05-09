@@ -215,13 +215,16 @@ func (s Suite) ToTapY() ([]byte, error) {
 
 type Case struct {
 	Type    string
-	Subtype string
 	Label   string
 	Level   int
+
+	Subtype string `yaml:",omitempty" json:",omitempty"`
 	Extra   interface{} `yaml:",omitempty" json:",omitempty"`
 
-	Tests    []*Test
-	Subcases []*Case
+    // Not part of any TAP protocol
+	Tests    []*Test `yaml:",omitempty" json:",omitempty"`
+    // Not part of any TAP protocol
+	Subcases []*Case `yaml:",omitempty" json:",omitempty"`
 
 	parent *Case
 }
@@ -240,35 +243,45 @@ func (c Case) Docs() (ret []interface{}) {
 // TODO: allow strings via UnmarshalJSON/YAML
 type Snippet []map[string]string
 
+type TestCoverage struct {
+	File string `yaml:",omitempty" json:",omitempty"`
+	// TODO: limit this to a number
+	// according to tap-y/j, can be:
+	// - line: 11
+	// - range: 11..13
+	// - list of lines: [11,12,13]
+	Line interface{} `yaml:",omitempty" json:",omitempty"`
+	Code string      `yaml:",omitempty" json:",omitempty"`
+}
+
+type TestException struct {
+	Message   string
+	File      string      `yaml:",omitempty" json:",omitempty"`
+	Line      int         `yaml:",omitempty" json:",omitempty"`
+	Source    string      `yaml:",omitempty" json:",omitempty"`
+	Snippet   Snippet     `yaml:",omitempty" json:",omitempty"`
+	Backtrace interface{} `yaml:",omitempty" json:",omitempty"`
+}
+
 type Test struct {
-	Type     string
-	Subtype  string `yaml:",omitempty" json:",omitempty"`
-	Status   string
-	Setup    string `yaml:",omitempty" json:",omitempty"`
-	Label    string
-	Expected interface{} `yaml:",omitempty" json:",omitempty"`
-	Returned interface{} `yaml:",omitempty" json:",omitempty"`
-	File     string      `yaml:",omitempty" json:",omitempty"`
-	Line     int         `yaml:",omitempty" json:",omitempty"`
-	Source   string      `yaml:",omitempty" json:",omitempty"`
-	Snippet  Snippet     `yaml:",omitempty" json:",omitempty"`
-	Coverage struct {
-		File string
-		Line interface{}
-		Code string
-	} `yaml:",omitempty" json:",omitempty"`
-	Exception struct {
-		Message   string
-		File      string
-		Line      int
-		Source    string
-		Snippet   Snippet
-		Backtrace interface{}
-	} `yaml:",omitempty" json:",omitempty"`
-	Stdout string `yaml:",omitempty" json:",omitempty"`
-	Stderr string `yaml:",omitempty" json:",omitempty"`
+	Type   string
+	Status string
+	Label  string
 	Time   float64
-	Extra  interface{} `yaml:",omitempty" json:",omitempty"`
+
+	Subtype   string        `yaml:",omitempty" json:",omitempty"`
+	Setup     string        `yaml:",omitempty" json:",omitempty"`
+	Expected  interface{}   `yaml:",omitempty" json:",omitempty"`
+	Returned  interface{}   `yaml:",omitempty" json:",omitempty"`
+	File      string        `yaml:",omitempty" json:",omitempty"`
+	Line      int           `yaml:",omitempty" json:",omitempty"`
+	Source    string        `yaml:",omitempty" json:",omitempty"`
+	Snippet   Snippet       `yaml:",omitempty" json:",omitempty"`
+	Coverage  *TestCoverage  `yaml:",omitempty" json:",omitempty"`
+	Exception *TestException `yaml:",omitempty" json:",omitempty"`
+	Stdout    string        `yaml:",omitempty" json:",omitempty"`
+	Stderr    string        `yaml:",omitempty" json:",omitempty"`
+	Extra     interface{}   `yaml:",omitempty" json:",omitempty"`
 }
 
 type Note struct {
@@ -279,7 +292,7 @@ type Note struct {
 
 type Tally struct {
 	Type   string
-	Time   float64
+	Time   float64 `yaml:",omitempty" json:",omitempty"`
 	Counts struct {
 		Total int
 		Pass  int
