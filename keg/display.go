@@ -53,8 +53,20 @@ func (h *kegHandler) HandleTest(t *stein.Test) {
 		status = "skip"
 	}
 	clearLine()
-	testLine := fmt.Sprintf("%s%s ... %s", h.getIndentation(h.currentLevel+1), status, t.Label)
+    indent := h.getIndentation(h.currentLevel+1)
+    var testLine string
+    var postIndent = ""
+    for len(status) + len(postIndent) < longestStatus {
+        postIndent += " "
+    }
+    testLine = fmt.Sprintf("%s%s%s ... %s", indent, status, postIndent, t.Label)
 	printColor(statusColors[status], testLine)
+    if t.Exception != nil && t.Exception.Line > 0 && t.Exception.File != "" {
+        for i := 0; i < longestStatus + len(" ... "); i++ {
+            indent += " "
+        }
+        printColor(statusColors["note"], fmt.Sprintf("\n%s%s:%d", indent, t.Exception.File, t.Exception.Line))
+    }
 	if *onlyFail {
 		if status == "fail" || status == "error" {
 			fmt.Print("\n")
@@ -84,6 +96,17 @@ var statusColors = map[string]string{
 	"fail":  "r",
 	"error": "m",
 	"todo":  "b",
+    "note": "w",
+}
+
+var longestStatus int
+
+func init() {
+    for status := range statusColors {
+        if len(status) > longestStatus {
+            longestStatus = len(status)
+        }
+    }
 }
 
 func printColor(color, text string) {
