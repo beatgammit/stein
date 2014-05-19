@@ -96,7 +96,24 @@ func (db CouchDB) init() error {
 		"map": `function(doc) {
 		   emit(doc.project, doc);
 	   }`,
-		"reduce": `function (keys, values, meh) {
+		"reduce": `function (keys, values, rereduce) {
+           if (rereduce) {
+               return values.reduce(function (p, o) {
+                   var k;
+
+                   for (k in o) {
+                       if (isNaN(o[k])) {
+                           continue;
+                       }
+                       if (isNaN(p[k])) {
+                           p[k] = 0;
+                       }
+                       p[k] += o[k];
+                   }
+                   return p;
+               }, {});
+           }
+
 		   return keys.reduce(function (p, key) {
 			   var k = key[0];
 			   p[k] = k in p ? p[k] + 1 : 1;
