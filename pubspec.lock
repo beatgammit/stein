@@ -41,6 +41,10 @@ packages:
     description: intl
     source: hosted
     version: "0.8.10+4"
+  less_node:
+    description: less_node
+    source: hosted
+    version: "0.1.0"
   logging:
     description: logging
     source: hosted

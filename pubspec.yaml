@@ -1,8 +1,12 @@
 name: stein
-version: 0.0.1
+version: 0.1.0
 license: BSD
 description: TAP-Y/J viewer.
 dependencies:
     angular: ">=0.11.0 <0.12.0"
+    less_node: ">=0.1.0 <0.2.0"
 transformers:
-- angular
+    - angular
+    - less_node:
+        entry_point: web/main.less
+        output: build/web/main.css

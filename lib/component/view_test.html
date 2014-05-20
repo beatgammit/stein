@@ -5,4 +5,13 @@
   <label>Error:</label><span>{{cmp.error}}</span>
   <label>Skip:</label><span>{{cmp.skip}}</span>
   <label>Todo:</label><span>{{cmp.todo}}</span>
+
+  <div ng-repeat="testCase in cmp.cases">
+    <div ng-repeat="test in testCase['Tests']" class="{{test['Status']}} test">
+      <h3>{{test["Label"]}}</h3>
+      <p ng-if="test['Status'] == 'fail' || test['Status'] == 'error'">
+        {{test["Exception"]["Message"]}}
+      </p>
+    </div>
+  </div>
 </div>
