@@ -5,35 +5,16 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>Stein TAP Viewer</title>
 		<link rel="stylesheet" href="main.css">
+	</head>
+	<body stein-app ng-cloak>
+		<h1>Stein</h1>
+
+        <section>
+            <ng-view></ng-view>
+        </section>
+
 		<script type='application/javascript' src="packages/shadow_dom/shadow_dom.min.js"></script>
 		<script type='application/dart' src='main.dart'></script>
 		<script type='application/javascript' src="packages/browser/dart.js"></script>
-	</head>
-	<body>
-		<h1>Stein</h1>
-		<div stein-app>
-			<select ng-model="ctrl.selectedProject" ng-change="ctrl.selectProject()">
-				<option ng-repeat="project in ctrl.projects" value="{{project}}">{{project}}</option>
-			</select>
-			<select ng-model="ctrl.selectedTest" ng-change="ctrl.selectTest()">
-				<option ng-repeat="test in ctrl.tests" value="{{test}}">{{test}}</option>
-			</select>
-
-			<div class='tally'>
-				<label>Time:</label><span class='time'>{{ctrl.curTest['Final']['Time']}}</span>
-				<br>
-				<label>Total:</label><span class='total'>{{ctrl.curTest['Final']['Counts']['Total']}}</span>
-				<br>
-				<label>Pass:</label><span class='pass'>{{ctrl.curTest['Final']['Counts']['Pass']}}</span>
-				<br>
-				<label>Fail:</label><span class='fail'>{{ctrl.curTest['Final']['Counts']['Fail']}}</span>
-				<br>
-				<label>Error:</label><span class='error'>{{ctrl.curTest['Final']['Counts']['Error']}}</span>
-				<br>
-				<label>Omit:</label><span class='omit'>{{ctrl.curTest['Final']['Counts']['Omit']}}</span>
-				<br>
-				<label>Todo:</label><span class='todo'>{{ctrl.curTest['Final']['Counts']['Todo']}}</span>
-			</div>
-		</div>
 	</body>
 </html>
