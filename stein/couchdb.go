@@ -51,6 +51,40 @@ func NewCouchDB(addr, database, user, pass string) (DB, error) {
 	return db, db.init()
 }
 
+func (db CouchDB) genByTypeView(project string) (string, map[string]string) {
+	return project + "_by_type", map[string]string{
+		"map": fmt.Sprintf(`function(doc) {
+           if (doc.project == '%s' && typeof doc.Type === 'string') {
+               emit(doc.Type, doc._id);
+           }
+	   }`, project),
+		"reduce": `function (keys, values, rereduce) {
+           if (rereduce) {
+               return values.reduce(function (p, o) {
+                   var k;
+
+                   for (k in o) {
+                       if (isNaN(o[k])) {
+                           continue;
+                       }
+                       if (isNaN(p[k])) {
+                           p[k] = 0;
+                       }
+                       p[k] += o[k];
+                   }
+                   return p;
+               }, {});
+           }
+
+		   return keys.reduce(function (p, key) {
+			   var k = key[0];
+			   p[k] = k in p ? p[k] + 1 : 1;
+			   return p;
+		   }, {});
+	   }`,
+	}
+}
+
 // init ensures that the database is configured correctly:
 // - creates database
 // - creates views
@@ -89,6 +123,14 @@ func (db CouchDB) init() error {
 		m["language"] = "javascript"
 	}
 	views := m["views"].(map[string]interface{})
+
+	if projects, err := db.GetProjects(); err == nil {
+		for _, project := range projects {
+			viewName, view := db.genByTypeView(project)
+			views[viewName] = view
+		}
+	}
+
 	// by_project maps projects to documents
 	// use reduce=false to get all documents, or
 	// reduce=true to get counts per project
@@ -189,6 +231,46 @@ func (db CouchDB) GetTests(project string) ([]string, error) {
 		// TODO: make this safer
 		val := row.(map[string]interface{})["value"].(map[string]interface{})
 		id := val["_id"].(string)
+		tests = append(tests, id)
+	}
+	return tests, nil
+}
+
+func (db CouchDB) GetTestTypes(project string) ([]string, error) {
+	urlPath := fmt.Sprintf("%s%s/_design/%s/_view/%s_by_type?group=true", db.addr, db.database, db.design, project)
+	resp, err := http.Get(urlPath)
+	if err != nil {
+		return nil, err
+	}
+	var m map[string]interface{}
+	if err = json.NewDecoder(resp.Body).Decode(&m); err != nil {
+		return nil, err
+	}
+
+	var testTypes []string
+	for _, row := range m["rows"].([]interface{}) {
+		// TODO: make this safer
+		key := row.(map[string]interface{})["key"].(string)
+		testTypes = append(testTypes, key)
+	}
+	return testTypes, nil
+}
+
+func (db CouchDB) GetTestsByType(project, typ string) ([]string, error) {
+	urlPath := fmt.Sprintf("%s%s/_design/%s/_view/%s_by_type?key=\"%s\"&reduce=false", db.addr, db.database, db.design, project, typ)
+	resp, err := http.Get(urlPath)
+	if err != nil {
+		return nil, err
+	}
+	var m map[string]interface{}
+	if err = json.NewDecoder(resp.Body).Decode(&m); err != nil {
+		return nil, err
+	}
+
+	var tests []string
+	for _, row := range m["rows"].([]interface{}) {
+		// TODO: make this safer
+		id := row.(map[string]interface{})["id"].(string)
 		tests = append(tests, id)
 	}
 	return tests, nil

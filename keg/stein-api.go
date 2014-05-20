@@ -7,17 +7,13 @@ import (
 	"net/url"
 )
 
-func postSuite(buf io.Reader, host string, project, testType string) error {
-	if len(project) == 0 {
-		project = "default"
+func postSuite(buf io.Reader, host, project, testType string) error {
+	addr := &url.URL{Scheme: "http", Host: host, Path: fmt.Sprintf("/projects/%s", project)}
+	if testType != "" {
+		addr.Path += "/types/" + testType
 	}
-
-	addr := &url.URL{Scheme: "http", Host: host, Path: fmt.Sprintf("/projects/%s/tests", project)}
 	_, err := http.Post(addr.String(), "application/tap", buf)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func validatePost(host string) error {

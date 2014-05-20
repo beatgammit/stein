@@ -1,11 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/beatgammit/stein"
 	"github.com/codegangsta/martini"
+	"github.com/codegangsta/martini-contrib/render"
 	log "github.com/jcelliott/lumber"
 	"net/http"
 	"os"
@@ -19,6 +19,10 @@ var (
 	couchAddr string
 )
 
+var (
+	db DB
+)
+
 func init() {
 	flag.StringVar(&steinAddr, "addr", "localhost:3000", "address and port where stein will run")
 	flag.StringVar(&dbType, "dbtype", "fs", "database type to use: fs, couchdb")
@@ -28,8 +32,71 @@ func init() {
 	flag.Parse()
 }
 
+func getProjects(re render.Render) {
+	projs, err := db.GetProjects()
+	if err != nil {
+		re.JSON(500, err.Error())
+	} else {
+		re.JSON(200, projs)
+	}
+}
+
+func getTestsByProject(params martini.Params, re render.Render) {
+	tests, err := db.GetTests(params["project"])
+	if err != nil {
+		re.JSON(500, err.Error())
+	} else {
+		re.JSON(200, tests)
+	}
+}
+
+func uploadTest(params martini.Params, r *http.Request, re render.Render) {
+	id := time.Now().Format(time.RFC3339)
+	s, err := stein.Parse(r.Body)
+	if err != nil {
+		re.JSON(500, err.Error())
+		return
+	}
+
+	if typ, ok := params["type"]; ok {
+		s.Type = typ
+	}
+
+	if err = db.Save(params["project"], id, s); err != nil {
+		re.JSON(500, err.Error())
+	} else {
+		re.JSON(200, id)
+	}
+}
+
+func getTest(params martini.Params, re render.Render) {
+	s, err := db.GetTest(params["project"], params["test"])
+	if err != nil {
+		re.JSON(500, err.Error())
+	} else {
+		re.JSON(200, s)
+	}
+}
+
+func getTestTypes(params martini.Params, re render.Render) {
+	s, err := db.GetTestTypes(params["project"])
+	if err != nil {
+		re.JSON(500, err.Error())
+	} else {
+		re.JSON(200, s)
+	}
+}
+
+func getTestsByType(params martini.Params, re render.Render) {
+	s, err := db.GetTestsByType(params["project"], params["type"])
+	if err != nil {
+		re.JSON(500, err.Error())
+	} else {
+		re.JSON(200, s)
+	}
+}
+
 func main() {
-	var db DB
 	var err error
 	switch dbType {
 	case "fs":
@@ -48,44 +115,16 @@ func main() {
 
 	m := martini.Classic()
 	m.Use(martini.Static("build/web"))
-	m.Get("/projects", func() (string, int) {
-		projs, err := db.GetProjects()
-		if err != nil {
-			return err.Error(), 500
-		}
-		b, _ := json.Marshal(projs)
-		return string(b), 200
-	})
+	m.Use(render.Renderer())
 
-	m.Get("/projects/:project/tests", func(params martini.Params) (string, int) {
-		tests, err := db.GetTests(params["project"])
-		if err != nil {
-			return err.Error(), 500
-		}
-		b, _ := json.Marshal(tests)
-		return string(b), 200
-	})
+	m.Get("/projects", getProjects)
+	m.Get("/projects/:project", getTestsByProject)
+	m.Get("/projects/:project/tests", getTestsByProject)
+	m.Post("/projects/:project", uploadTest)
+	m.Get("/projects/:project/tests/:test", getTest)
+	m.Get("/projects/:project/types", getTestTypes)
+	m.Get("/projects/:project/types/:type", getTestsByType)
+	m.Post("/projects/:project/types/:type", uploadTest)
 
-	m.Post("/projects/:project/tests", func(params martini.Params, r *http.Request) (string, int) {
-		id := time.Now().Format(time.RFC3339)
-		s, err := stein.Parse(r.Body)
-		if err != nil {
-			return err.Error(), 500
-		}
-
-		err = db.Save(params["project"], id, s)
-		if err != nil {
-			return err.Error(), 500
-		}
-		return id, 200
-	})
-	m.Get("/projects/:project/tests/:test", func(params martini.Params) (string, int) {
-		s, err := db.GetTest(params["project"], params["test"])
-		if err != nil {
-			return err.Error(), 500
-		}
-		b, _ := json.Marshal(s)
-		return string(b), 200
-	})
 	log.Fatal("%s", http.ListenAndServe(steinAddr, m))
 }
