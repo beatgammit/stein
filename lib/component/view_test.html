@@ -7,6 +7,7 @@
   <label>Todo:</label><span>{{cmp.todo}}</span>
 
   <div ng-repeat="testCase in cmp.cases">
+    <h3>{{testCase['Label']}}</h3>
     <div ng-repeat="test in testCase['Tests']" class="{{test['Status']}} test">
       <h3>{{test["Label"]}}</h3>
       <p ng-if="test['Status'] == 'fail' || test['Status'] == 'error'">
