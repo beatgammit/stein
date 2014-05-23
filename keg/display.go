@@ -65,6 +65,8 @@ func (h *kegHandler) HandleTest(t *stein.Test) {
 		for i := 0; i < longestStatus+len(" ... "); i++ {
 			indent += " "
 		}
+
+		printColor(statusColors[status], fmt.Sprintf("\n%sError: %s", indent+"  ", t.Exception.Message))
 		printColor(statusColors["note"], fmt.Sprintf("\n%s%s:%d", indent, t.Exception.File, t.Exception.Line))
 	}
 	if *onlyFail {

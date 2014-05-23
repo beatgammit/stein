@@ -214,16 +214,16 @@ func (s Suite) ToTapY() ([]byte, error) {
 }
 
 type Case struct {
-	Type    string
-	Label   string
-	Level   int
+	Type  string
+	Label string
+	Level int
 
-	Subtype string `yaml:",omitempty" json:",omitempty"`
+	Subtype string      `yaml:",omitempty" json:",omitempty"`
 	Extra   interface{} `yaml:",omitempty" json:",omitempty"`
 
-    // Not part of any TAP protocol
-	Tests    []*Test `yaml:",omitempty" json:",omitempty"`
-    // Not part of any TAP protocol
+	// Not part of any TAP protocol
+	Tests []*Test `yaml:",omitempty" json:",omitempty"`
+	// Not part of any TAP protocol
 	Subcases []*Case `yaml:",omitempty" json:",omitempty"`
 
 	parent *Case
@@ -269,19 +269,19 @@ type Test struct {
 	Label  string
 	Time   float64
 
-	Subtype   string        `yaml:",omitempty" json:",omitempty"`
-	Setup     string        `yaml:",omitempty" json:",omitempty"`
-	Expected  interface{}   `yaml:",omitempty" json:",omitempty"`
-	Returned  interface{}   `yaml:",omitempty" json:",omitempty"`
-	File      string        `yaml:",omitempty" json:",omitempty"`
-	Line      int           `yaml:",omitempty" json:",omitempty"`
-	Source    string        `yaml:",omitempty" json:",omitempty"`
-	Snippet   Snippet       `yaml:",omitempty" json:",omitempty"`
+	Subtype   string         `yaml:",omitempty" json:",omitempty"`
+	Setup     string         `yaml:",omitempty" json:",omitempty"`
+	Expected  interface{}    `yaml:",omitempty" json:",omitempty"`
+	Returned  interface{}    `yaml:",omitempty" json:",omitempty"`
+	File      string         `yaml:",omitempty" json:",omitempty"`
+	Line      int            `yaml:",omitempty" json:",omitempty"`
+	Source    string         `yaml:",omitempty" json:",omitempty"`
+	Snippet   Snippet        `yaml:",omitempty" json:",omitempty"`
 	Coverage  *TestCoverage  `yaml:",omitempty" json:",omitempty"`
 	Exception *TestException `yaml:",omitempty" json:",omitempty"`
-	Stdout    string        `yaml:",omitempty" json:",omitempty"`
-	Stderr    string        `yaml:",omitempty" json:",omitempty"`
-	Extra     interface{}   `yaml:",omitempty" json:",omitempty"`
+	Stdout    string         `yaml:",omitempty" json:",omitempty"`
+	Stderr    string         `yaml:",omitempty" json:",omitempty"`
+	Extra     interface{}    `yaml:",omitempty" json:",omitempty"`
 }
 
 type Note struct {
