@@ -29,6 +29,7 @@ func NewCouchDB(addr, database, user, pass string) (DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	var m map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&m)
 	if err != nil {
@@ -100,23 +101,24 @@ func (db CouchDB) init() error {
 		return err
 	} else {
 		// TODO: check for errors
-		resp.Body.Close()
+		defer resp.Body.Close()
 	}
 
 	designDocUrl := db.addr + db.database + "/_design/" + db.design
 
-	resp, err := http.Get(designDocUrl)
-	if err != nil {
-		return err
-	}
 	var m map[string]interface{}
-	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		// design doc already exists, so update it
-		if err = json.NewDecoder(resp.Body).Decode(&m); err != nil {
-			return err
-		}
+	if resp, err := http.Get(designDocUrl); err != nil {
+		return err
 	} else {
-		m = make(map[string]interface{})
+		defer resp.Body.Close()
+		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			// design doc already exists, so update it
+			if err = json.NewDecoder(resp.Body).Decode(&m); err != nil {
+				return err
+			}
+		} else {
+			m = make(map[string]interface{})
+		}
 	}
 	if _, ok := m["views"]; !ok {
 		m["views"] = make(map[string]interface{})
@@ -181,12 +183,14 @@ func (db CouchDB) init() error {
 	if err != nil {
 		return err
 	}
-	resp, err = http.DefaultClient.Do(req)
-	if err != nil {
+	if resp, err := http.DefaultClient.Do(req); err != nil {
 		return err
-	} else if resp.StatusCode >= 400 {
-		fmt.Println(designDocUrl)
-		return fmt.Errorf("Error updating view: %d", resp.StatusCode)
+	} else {
+		defer resp.Body.Close()
+		if resp.StatusCode >= 400 {
+			fmt.Println(designDocUrl)
+			return fmt.Errorf("Error updating view: %d", resp.StatusCode)
+		}
 	}
 	return nil
 }
@@ -196,6 +200,7 @@ func (db CouchDB) GetProjects() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	var m map[string]interface{}
 	if err = json.NewDecoder(resp.Body).Decode(&m); err != nil {
 		return nil, err
@@ -220,6 +225,7 @@ func (db CouchDB) GetTests(project string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	var m map[string]interface{}
 	if err = json.NewDecoder(resp.Body).Decode(&m); err != nil {
 		return nil, err
@@ -242,6 +248,7 @@ func (db CouchDB) GetTestTypes(project string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	var m map[string]interface{}
 	if err = json.NewDecoder(resp.Body).Decode(&m); err != nil {
 		return nil, err
@@ -262,6 +269,7 @@ func (db CouchDB) GetTestsByType(project, typ string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	var m map[string]interface{}
 	if err = json.NewDecoder(resp.Body).Decode(&m); err != nil {
 		return nil, err
@@ -281,6 +289,7 @@ func (db CouchDB) GetTest(project, test string) (*stein.Suite, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	var s stein.Suite
 	return &s, json.NewDecoder(resp.Body).Decode(&s)
@@ -305,16 +314,18 @@ func (db CouchDB) Save(project, test string, s *stein.Suite) error {
 	testAddr := db.addr + db.database + "/" + test
 
 	var rev string
-	resp, err := http.Get(testAddr)
-	if err != nil {
+	if resp, err := http.Get(testAddr); err != nil {
 		return err
-	} else if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		var cur map[string]interface{}
-		err := json.NewDecoder(resp.Body).Decode(&cur)
-		if err != nil {
-			return err
+	} else {
+		defer resp.Body.Close()
+		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			var cur map[string]interface{}
+			err := json.NewDecoder(resp.Body).Decode(&cur)
+			if err != nil {
+				return err
+			}
+			rev = cur["_rev"].(string)
 		}
-		rev = cur["_rev"].(string)
 	}
 
 	var req *http.Request
@@ -329,12 +340,13 @@ func (db CouchDB) Save(project, test string, s *stein.Suite) error {
 	if db.user != "" {
 		req.SetBasicAuth(db.user, db.pass)
 	}
-	resp, err = http.DefaultClient.Do(req)
-	if err != nil {
+	if resp, err := http.DefaultClient.Do(req); err != nil {
 		return err
-	} else if resp.StatusCode >= 400 {
-		return fmt.Errorf("Error updating document: %d", resp.StatusCode)
+	} else {
+		defer resp.Body.Close()
+		if resp.StatusCode >= 400 {
+			return fmt.Errorf("Error updating document: %d", resp.StatusCode)
+		}
 	}
-	resp.Body.Close()
 	return nil
 }
