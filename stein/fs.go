@@ -93,6 +93,7 @@ func (fs FS) Save(project, test string, s *stein.Suite) error {
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 
 	types, _ := fs.parseTypes(project)
 	types[s.Type] = append(types[s.Type], test)
