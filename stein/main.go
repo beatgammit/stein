@@ -3,13 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
+	"os"
+	"path"
+	"time"
+
 	"github.com/beatgammit/stein"
 	"github.com/codegangsta/martini"
 	"github.com/codegangsta/martini-contrib/render"
 	log "github.com/jcelliott/lumber"
-	"net/http"
-	"os"
-	"time"
 )
 
 var (
@@ -114,7 +116,12 @@ func main() {
 	}
 
 	m := martini.Classic()
-	m.Use(martini.Static("build/web"))
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	m.Use(martini.Static(path.Join(cwd, "build/web")))
 	m.Use(render.Renderer())
 
 	m.Get("/projects", getProjects)
