@@ -35,6 +35,9 @@ func (h *kegHandler) getIndentation(level int) string {
 }
 
 func (h *kegHandler) HandleSuite(s *stein.Suite) {
+	if *quiet {
+		return
+	}
 	fmt.Printf("Test suite started on %s\n", s.Start.Local().Format(timeFormat))
 	if s.Count > 0 {
 		fmt.Printf("Running %d tests...\n\n", s.Count)
@@ -42,12 +45,18 @@ func (h *kegHandler) HandleSuite(s *stein.Suite) {
 }
 
 func (h *kegHandler) HandleCase(c *stein.Case) {
+	if *quiet {
+		return
+	}
 	clearLine()
 	fmt.Printf("%s%s\n", h.getIndentation(h.currentLevel), c.Label)
 	h.currentLevel = c.Level
 }
 
 func (h *kegHandler) HandleTest(t *stein.Test) {
+	if *quiet {
+		return
+	}
 	status := t.Status
 	if strings.ToLower(status) == "omit" {
 		status = "skip"
@@ -81,6 +90,9 @@ func (h *kegHandler) HandleTest(t *stein.Test) {
 }
 
 func (h *kegHandler) HandleFinal(t *stein.Tally) {
+	if *quiet {
+		return
+	}
 	clearLine()
 	fmt.Printf("\nResults: %d pass, %d fail, %d error, %d skip\n",
 		t.Counts.Pass, t.Counts.Fail, t.Counts.Error, t.Counts.Omit)
