@@ -77,7 +77,7 @@ func (h *kegHandler) HandleTest(t *stein.Test) {
 
 		printColor(statusColors[status], fmt.Sprintf("\n%sError: %s", indent+"  ", t.Exception.Message))
 		if t.Exception.File != "" {
-			str := fmt.Sprintf("\n%s%s", indent, t.Exception.File)
+			str := fmt.Sprintf("\n%s%s", indent+"  ", t.Exception.File)
 			if t.Exception.Line > 0 {
 				str += fmt.Sprintf(":%d", t.Exception.Line)
 			}
