@@ -124,7 +124,7 @@ func init() {
 }
 
 func printColor(color, text string) {
-	if !nocolor {
+	if nocolor {
 		terminal.Stdout.Print(text)
 		return
 	}
