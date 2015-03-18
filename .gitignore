@@ -1,3 +1,3 @@
-packages
-build/
 *.swp
+bower_components
+node_modules

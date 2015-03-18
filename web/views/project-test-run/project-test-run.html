@@ -1,0 +1,11 @@
+<div>
+	<div ng-repeat='case in testResult.Cases'>
+		<label>{{case.Label}}:</label>
+		<br>
+		<div ng-repeat='test in case.Tests'>
+			<label>&nbsp;&nbsp;{{test.Label}}: {{test.Status}}</label>
+			<br>
+		</div>
+		<br>
+	</div>
+</div>

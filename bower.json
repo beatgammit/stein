@@ -1,0 +1,17 @@
+{
+	"name": "stein",
+	"description": "Web UI for stein",
+	"version": "0.1.0",
+	"homepage": "https://github.com/beatgammit/stein",
+	"license": "BSD",
+	"private": true,
+	"dependencies": {
+		"angular": "1.3.x",
+		"angular-route": "1.3.x",
+		"angular-loader": "1.3.x",
+		"angular-mocks": "~1.3.x",
+		"html5-boilerplate": "~4.3.0",
+		"requirejs-text": "2.0.x",
+		"requirejs": "2.1.x"
+	}
+}

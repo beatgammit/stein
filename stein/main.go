@@ -121,7 +121,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	m.Use(martini.Static(path.Join(cwd, "build/web")))
+	m.Use(martini.Static(path.Join(cwd, "web")))
 	m.Use(render.Renderer())
 
 	m.Get("/projects", getProjects)
@@ -133,5 +133,6 @@ func main() {
 	m.Get("/projects/:project/types/:type", getTestsByType)
 	m.Post("/projects/:project/types/:type", uploadTest)
 
+	fmt.Printf("Server listening: %s\n", steinAddr)
 	log.Fatal("%s", http.ListenAndServe(steinAddr, m))
 }

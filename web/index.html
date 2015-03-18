@@ -1,20 +1,17 @@
-<!DOCTYPE html>
-<html ng-app>
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Stein TAP Viewer</title>
-		<link rel="stylesheet" href="main.css">
-	</head>
-	<body stein-app ng-cloak>
-		<h1>Stein</h1>
+<!doctype html>
+<html lang="en" ng-app="stein">
+<head>
+	<meta charset="utf-8">
+	<link rel="stylesheet" href="bower_components/html5-boilerplate/css/normalize.css">
+	<link rel="stylesheet" href="bower_components/html5-boilerplate/css/main.css">
+	<script src="bower_components/html5-boilerplate/js/vendor/modernizr-2.6.2.min.js"></script>
+	<title>Stein</title>
+	<link rel="stylesheet" href="app.css">
+</head>
+<body>
+	<div ng-view></div>
 
-        <section>
-            <ng-view></ng-view>
-        </section>
-
-		<script type='application/javascript' src="packages/shadow_dom/shadow_dom.debug.js"></script>
-		<script type='application/dart' src='main.dart'></script>
-		<script type='application/javascript' src="packages/browser/dart.js"></script>
-	</body>
+	<div>Angular seed app: v<span app-version></span></div>
+	<script data-main="require-config" src="bower_components/requirejs/require.js"></script>
+</body>
 </html>
