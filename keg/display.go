@@ -78,7 +78,7 @@ func (h *kegHandler) HandleTest(t *stein.Test) {
 		printColor(statusColors[status], fmt.Sprintf("\n%sError: %s", indent+"  ", t.Exception.Message))
 		printColor(statusColors["note"], fmt.Sprintf("\n%s%s:%d", indent, t.Exception.File, t.Exception.Line))
 	}
-	if *onlyFail {
+	if *format == "onlyfail" {
 		if status == "fail" || status == "error" {
 			fmt.Print("\n")
 		} else {
@@ -99,7 +99,7 @@ func (h *kegHandler) HandleFinal(t *stein.Tally) {
 }
 
 func clearLine() {
-	if *onlyFail {
+	if *format == "onlyfail" {
 		terminal.Stdout.ClearLine()
 	}
 }
@@ -124,5 +124,9 @@ func init() {
 }
 
 func printColor(color, text string) {
+	if !nocolor {
+		terminal.Stdout.Print(text)
+		return
+	}
 	terminal.Stdout.Color(color).Print(text).Reset()
 }

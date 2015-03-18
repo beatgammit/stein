@@ -10,11 +10,15 @@ import (
 )
 
 var (
-	onlyFail  = flag.BoolP("onlyfail", "f", false, "Only display failed tests")
 	steinHost = flag.StringP("stein", "s", "", "Address of Stein server to send results to")
 	project   = flag.StringP("project", "p", "default", "Project the test results belong to")
 	testType  = flag.StringP("type", "t", "", "Test result type")
 	quiet     = flag.BoolP("quiet", "q", false, "Quiet mode")
+	format    = flag.StringP("format", "f", "default", "Formatting options: default, simple (no color), onlyfail")
+)
+
+var (
+	nocolor bool
 )
 
 func main() {
@@ -25,6 +29,11 @@ func main() {
 			os.Exit(1)
 		}
 	}
+
+	if *format == "simple" {
+		nocolor = true
+	}
+
 	buffer := &bytes.Buffer{}
 	_, err := newKegParser().Parse(io.TeeReader(os.Stdin, buffer))
 	if err != nil {
