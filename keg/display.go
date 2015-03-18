@@ -70,13 +70,19 @@ func (h *kegHandler) HandleTest(t *stein.Test) {
 	}
 	testLine = fmt.Sprintf("%s%s%s ... %s", indent, status, postIndent, t.Label)
 	printColor(statusColors[status], testLine)
-	if t.Exception != nil && t.Exception.Line > 0 && t.Exception.File != "" {
+	if t.Exception != nil {
 		for i := 0; i < longestStatus+len(" ... "); i++ {
 			indent += " "
 		}
 
 		printColor(statusColors[status], fmt.Sprintf("\n%sError: %s", indent+"  ", t.Exception.Message))
-		printColor(statusColors["note"], fmt.Sprintf("\n%s%s:%d", indent, t.Exception.File, t.Exception.Line))
+		if t.Exception.File != "" {
+			str := fmt.Sprintf("\n%s%s", indent, t.Exception.File)
+			if t.Exception.Line > 0 {
+				str += fmt.Sprintf(":%d", t.Exception.Line)
+			}
+			printColor(statusColors["note"], str)
+		}
 	}
 	if *format == "onlyfail" {
 		if status == "fail" || status == "error" {
