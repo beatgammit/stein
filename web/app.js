@@ -4,6 +4,8 @@ define([
 
 	'./views/projects/projects',
 	'./views/project-tests/project-tests',
+	'./views/project-test-types/project-test-types',
+	'./views/project-type-tests/project-type-tests',
 	'./views/project-test-run/project-test-run',
 ], function(angular, angularRoute, view1, view2) {
 	'use strict';
@@ -14,6 +16,8 @@ define([
 
 		'stein.projects',
 		'stein.project-tests',
+		'stein.project-test-types',
+		'stein.project-type-tests',
 		'stein.project-test-run',
 	]).
 	config(['$routeProvider', function($routeProvider) {
@@ -26,6 +30,14 @@ define([
 			.when('/projects/:project/tests', {
 				templateUrl: 'views/project-tests/project-tests.html',
 				controller: 'ProjectTestsCtrl',
+			})
+			.when('/projects/:project/types', {
+				templateUrl: 'views/project-test-types/project-test-types.html',
+				controller: 'ProjectTestTypesCtrl',
+			})
+			.when('/projects/:project/types/:type', {
+				templateUrl: 'views/project-type-tests/project-type-tests.html',
+				controller: 'ProjectTypeTestsCtrl',
 			})
 			.when('/projects/:project/tests/:test', {
 				templateUrl: 'views/project-test-run/project-test-run.html',
