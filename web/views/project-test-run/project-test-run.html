@@ -1,11 +1,17 @@
 <div>
 	<h1>{{project}} results, run {{test}}:</h1>
-	<div ng-repeat='case in testResult.Cases'>
+    <h2>Totals: {{testResult.Final.Counts.Pass / testResult.Final.Counts.Total * 100 | number:1}}%</h2>
+    <label class="totals test-pass">Pass: {{testResult.Final.Counts.Pass}}</label>
+    <label class="totals test-fail">Fails: {{testResult.Final.Counts.Fail}}</label>
+    <label class="totals test-error">Errors: {{testResult.Final.Counts.Error}}</label>
+    <label class="totals test-skip">Skip: {{testResult.Final.Counts.Omit}}</label>
+    <label class="totals">Total: {{testResult.Final.Counts.Total}}</label>
+    <br>
+	<div ng-repeat='case in testResult.Cases' class="test-case">
 		<label>{{case.Label}}:</label>
 		<br>
 		<div ng-repeat='test in case.Tests'>
-            <label class="test-{{test.Status}}">&nbsp;&nbsp;{{test.Label}}: {{test.Status}}</label>
-			<br>
+            <label class="test test-{{test.Status}}">{{test.Label}}: {{test.Status}}</label>
 		</div>
 		<br>
 	</div>

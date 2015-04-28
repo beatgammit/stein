@@ -1,0 +1,37 @@
+body {
+    padding: 15px;
+}
+
+h2 {
+    margin: 0px;
+}
+
+.totals {
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.test-case {
+    margin: 20px 0;
+    font-weight: bold;
+}
+
+.test {
+    margin-left: 10px;
+}
+
+.test-skip {
+    color: gray;
+}
+
+.test-pass {
+    color: green;
+}
+
+.test-fail {
+    color: red;
+}
+
+.test-error {
+    color: purple;
+}
