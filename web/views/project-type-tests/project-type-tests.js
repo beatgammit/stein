@@ -8,7 +8,7 @@ define([
 			$scope.project = $routeParams.project;
 			$scope.type = $routeParams.type;
 			$http.get('/projects/' + $routeParams.project + '/types/' + $routeParams.type).success(function (data) {
-				$scope.tests = data;
+				$scope.tests = data.sort().reverse();
 			});
 		}]);
 });
