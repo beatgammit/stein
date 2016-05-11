@@ -4,12 +4,13 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"gopkg.in/v1/yaml"
 	"io"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"gopkg.in/v1/yaml"
 )
 
 var (

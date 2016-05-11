@@ -1,6 +1,6 @@
 <div>
 	<h1>{{project}} results, run {{test}}:</h1>
-    <h2>Totals: {{testResult.Final.Counts.Pass / testResult.Final.Counts.Total * 100 | number:1}}%</h2>
+    <h2>Totals: {{testResult.Final.Counts.Pass / (testResult.Final.Counts.Total - testResult.Final.Counts.Omit) * 100 | number:1}}%</h2>
     <label class="totals test-pass">Pass: {{testResult.Final.Counts.Pass}}</label>
     <label class="totals test-fail">Fails: {{testResult.Final.Counts.Fail}}</label>
     <label class="totals test-error">Errors: {{testResult.Final.Counts.Error}}</label>
