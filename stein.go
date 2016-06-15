@@ -108,7 +108,8 @@ func (s *Suite) parse(dec decoder, handler Handler) (err error) {
 
 		if s.Start == nil {
 			if err = dec.Unmarshal([]byte(doc), &s); err != nil {
-				return
+				fmt.Println(err)
+				continue
 			}
 			handler.HandleSuite(s)
 			continue
@@ -123,7 +124,8 @@ func (s *Suite) parse(dec decoder, handler Handler) (err error) {
 		case "case":
 			var c Case
 			if err = dec.Unmarshal([]byte(doc), &c); err != nil {
-				return
+				fmt.Println(err)
+				continue
 			}
 
 			if c.Level == 0 {
@@ -145,7 +147,8 @@ func (s *Suite) parse(dec decoder, handler Handler) (err error) {
 		case "test":
 			var t Test
 			if err = dec.Unmarshal([]byte(doc), &t); err != nil {
-				return
+				fmt.Println(err)
+				continue
 			}
 			if lastCase != nil {
 				lastCase.Tests = append(lastCase.Tests, &t)
@@ -156,20 +159,23 @@ func (s *Suite) parse(dec decoder, handler Handler) (err error) {
 		case "note":
 			var n Note
 			if err = dec.Unmarshal([]byte(doc), &n); err != nil {
-				return
+				fmt.Println(err)
+				continue
 			}
 			s.Notes = append(s.Notes, n)
 			handler.HandleNote(&n)
 		case "tally":
 			var t Tally
 			if err = dec.Unmarshal([]byte(doc), &t); err != nil {
-				return
+				fmt.Println(err)
+				continue
 			}
 			handler.HandleTally(&t)
 		case "final":
 			var t Tally
 			if err = dec.Unmarshal([]byte(doc), &t); err != nil {
-				return
+				fmt.Println(err)
+				continue
 			}
 			s.Final = t
 			handler.HandleFinal(&t)
