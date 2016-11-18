@@ -17,7 +17,8 @@
                 </label>
                 <div ng-show="test.expanded">
                     <label>Time Elapsed: {{test.Time}}</label>
-                    <label ng-if="test.Status !== 'pass'">Error message: {{JSON.stringify(test.Exception)}}</label>
+                    <br>
+                    <label ng-if="test.Status !== 'pass'">{{test.Exception.Message}}</label>
                 </div>
             </div>
 		</div>
