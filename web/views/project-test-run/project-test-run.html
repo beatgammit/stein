@@ -11,7 +11,15 @@
 		<label>{{case.Label}}:</label>
 		<br>
 		<div ng-repeat='test in case.Tests'>
-            <label class="test test-{{test.Status}}">{{test.Label}}: {{test.Status}}</label>
+            <div class="test">
+                <label class="clickable test-{{test.Status}}" ng-click="test.expanded = !test.expanded">
+                    {{test.Label}}: {{test.Status}}
+                </label>
+                <div ng-show="test.expanded">
+                    <label>Time Elapsed: {{test.Time}}</label>
+                    <label ng-if="test.Status !== 'pass'">Error message: {{JSON.stringify(test.Exception)}}</label>
+                </div>
+            </div>
 		</div>
 		<br>
 	</div>

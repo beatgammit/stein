@@ -35,3 +35,7 @@ h2 {
 .test-error {
     color: purple;
 }
+
+.clickable {
+    cursor: pointer;
+}
