@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 )
@@ -15,8 +16,15 @@ func postSuite(buf io.Reader, host, project, testType string) (string, error) {
 	}
 	resp, err := http.Post(addr.String(), "application/tap", buf)
 	if err == nil {
+		arr, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return "", err
+		}
 		var id string
-		return id, json.NewDecoder(resp.Body).Decode(&id)
+		if err = json.Unmarshal(arr, &id); err != nil {
+			err = fmt.Errorf("Error decoding response: %s: %s", string(arr), err)
+		}
+		return id, err
 	}
 	return "", err
 }
