@@ -19,6 +19,11 @@
                     <label>Time Elapsed: {{test.Time}}</label>
                     <br>
                     <label ng-if="test.Status !== 'pass'">{{test.Exception.Message}}</label>
+                    <div ng-if="test.Exception && test.Exception.File">
+                        <label>{{test.Exception.File}} +{{test.Exception.Line}}</label>
+                        <br>
+                        <label>{{test.Exception.Source}}</label>
+                    </div>
                 </div>
             </div>
 		</div>
